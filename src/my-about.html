@@ -1,0 +1,30 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="my-about">
+  <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+
+        padding: 10px;
+      }
+    </style>
+
+    <div class="card">
+      <div class="cat"><img src="../images/1496427695_cat_eyes.png"/></div>
+      <p>Schnelles und einfaches Beispiel einer PWA mit angebundener PHP REST Api (ohne klassische PUT, PATCH, DELETE Implementation).<br/><br/>
+        Diese Code ist ein Prototyp und sollte nicht produktiv eingesetzt werden.<br/><br/>
+        Author: Patrick<br/><br/>
+        <a href="https://github.com/patrickjaja">https://github.com/patrickjaja</a></p>
+    </div>
+  </template>
+
+  <script>
+    class MyAbout extends Polymer.Element {
+      static get is() { return 'my-about'; }
+    }
+
+    window.customElements.define(MyAbout.is, MyAbout);
+  </script>
+</dom-module>

@@ -1,0 +1,15 @@
+{
+  "name": "pmyphp",
+  "description": "",
+  "minimum-stability": "stable",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "Patrick",
+      "email": "patricks1987@web.de"
+    }
+  ],
+  "require": {
+    "sergeytsalkov/meekrodb": "v2.3"
+  }
+}

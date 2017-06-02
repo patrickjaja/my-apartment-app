@@ -1,0 +1,252 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-input/paper-textarea.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="my-apartments">
+  <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+
+        padding: 10px;
+      }
+      .rdmImg1 {
+        background-image: url("../images/1496272889_small_house-home.png");
+      }
+      .rdmImg2 {
+        background-image: url("../images/1496273080_big_house-home.png");
+      }
+      .rdmImg3 {
+        background-image: url("../images/1496273087_back_house_window-home.png");
+      }
+      .apartment-title-container {
+        display:flex;
+      }
+      .house-number {
+        font-size: 1.5em;
+        margin-left: 20px;
+        margin-top: 7px;
+      }
+      .add {
+
+      }
+      .action-btns {
+        padding-left: 16px;
+        float: right;
+      }
+      paper-button {
+        background-color: var(--paper-indigo-500);
+        color: white;
+        --paper-button-raised-keyboard-focus: {
+          background-color: var(--paper-pink-a200) !important;
+          color: white !important;
+        };
+      }
+      .creation-dialog-container {
+        width: 90%;
+      }
+      .creation-dialog-container paper-input,paper-textarea {
+        padding-left: 25px;
+      }
+    </style>
+
+    <app-route
+            id="routeDetails"
+            route="{{route}}"
+            pattern="/:apartmentID"
+            data="{{routeData}}"></app-route>
+
+    <app-route
+            route="{{route}}"
+            pattern="/:apartmentID/:token"
+            data="{{tokenData}}"></app-route>
+
+
+    <div class="action-btns">
+      <paper-button on-tap="_openDialogCreation" id="open"><iron-icon icon="icons:home"></iron-icon>Neuer Eintrag</paper-button>
+    </div>
+
+    <template is="dom-repeat" items="[[list]]">
+      <div class="card">
+        <div class="apartment-title-container">
+          <div class$="circle [[_getRdmImg()]]"></div>
+          <div class="house-number">Wohnungsnummer [[item.apartmentID]]</div>
+        </div>
+        <h1>[[item.name]] ([[item.contact]])</h1>
+        <p>[[item.description]]</p>
+        <p>mtl. Miete: [[item.eu_price]] €</p>
+        <div class="option-menu">
+          <paper-icon-button icon="icons:search" id="showDetails" title="Wohnung '[[item.name]]' anzeigen" on-tap="_showApartment"></paper-icon-button>
+          <template is="dom-if" if="{{canEdit}}">
+            <paper-icon-button icon="icons:create" id="edit" title="Wohnung '[[item.name]]' bearbeiten" on-tap="_loadApartment"></paper-icon-button>
+            <paper-icon-button icon="icons:delete" id="delete" title="Wohnung '[[item.name]]' löschen" on-tap="_deleteApartment"></paper-icon-button>
+          </template>
+
+        </div>
+      </div>
+    </template>
+
+    <paper-dialog id="creationDialog">
+      <h2>Neue Wohnung anlegen</h2>
+      <paper-dialog-scrollable>
+        <div class="creation-dialog-container">
+          <paper-input label="Titel" id="apartmentTitle"></paper-input>
+          <paper-input label="Emailadresse" id="apartmentContact"></paper-input>
+          <paper-textarea label="Beschreibung"  id="apartmentDescription"></paper-textarea>
+          <paper-input label="Wunschpreis"  id="apartmentPrice"></paper-input>
+        </div>
+      </paper-dialog-scrollable>
+      <div class="buttons">
+        <paper-button dialog-dismiss autofocus>Abbrechen</paper-button>
+        <paper-button dialog-confirm on-tap="_saveApartment">Speichern</paper-button>
+      </div>
+    </paper-dialog>
+
+    <paper-dialog id="updateDialog">
+      <h2>Wohnung ändern</h2>
+      <paper-dialog-scrollable>
+        <div class="creation-dialog-container">
+          <paper-input label="Titel" id="updateTitle" always-float-label></paper-input>
+          <paper-input label="Emailadresse" id="updateContact" always-float-label></paper-input>
+          <paper-textarea label="Beschreibung"  id="updateDescription" always-float-label></paper-textarea>
+          <paper-input label="Wunschpreis"  id="updatePrice" always-float-label></paper-input>
+        </div>
+      </paper-dialog-scrollable>
+      <div class="buttons">
+        <paper-button dialog-dismiss autofocus>Abbrechen</paper-button>
+        <paper-button dialog-confirm on-tap="_updateApartment">Speichern</paper-button>
+      </div>
+    </paper-dialog>
+  </template>
+
+  <script>
+    class MyApartments extends Polymer.Element {
+      static get is() { return 'my-apartments'; }
+        static get properties() {
+            return {
+                list: {
+                    type: Array,
+                    value: []
+                },
+                currentApartment: {
+                    type: Object,
+                    value: {}
+                },
+                canEdit: {
+                    type: Boolean,
+                    value: false
+                }
+            };
+        }
+        static get observers() {
+            return ['_viewChanged(routeData.apartmentID)'];
+        }
+        _currentApartmentChanged(apartmentObj) {
+          console.log(apartmentObj);
+        }
+        _tokenChanged(token) {
+            this._checkToken(token);
+        }
+        _viewChanged (view) {
+            this.loadApartments();
+        }
+        _checkToken(token) {
+            if (this.tokenData.apartmentID && this.tokenData.token) {
+                app.token.read({'token':this.tokenData.token,'apartmentID':this.tokenData.apartmentID}).then((response) => {
+                    if (response[0]) {
+                        this.set('canEdit',true);
+                    } else {
+                        this.set('canEdit',false);
+                    }
+                });
+            }
+        }
+        ready() {
+          super.ready();
+          this.loadApartments();
+        }
+        loadApartments() {
+          //check if ID given in Route
+          if (this.routeData.apartmentID) {
+              app.apartments.load({'apartmentID':this.routeData.apartmentID}).then((response)=> {
+                  this.set('currentApartment',response[0]);
+                  this.set('list',response);
+                  this._checkToken();
+              });
+          } else {
+              app.apartments.readAll().then((response)=> {
+                  this.set('currentApartment',{});
+                  this.set('list',response);
+              });
+          }
+        }
+        loadAll() {
+
+        }
+        _getRdmImg() {
+          return `rdmImg${this.getRandomInt(1,3)}`;
+        }
+        _loadApartment(e) {
+          var apartmentID=e.model.item.apartmentID;
+          app.apartments.load({'apartmentID':apartmentID}).then((response)=> {
+              //ToDo: Maybe show preloader?
+              this.set('currentApartment',response[0]);
+              this.$.updateTitle.value=response[0].name;
+              this.$.updateContact.value=response[0].contact;
+              this.$.updateDescription.value=response[0].description;
+              this.$.updatePrice.value=response[0].eu_price;
+              this.$.updateDialog.open();
+          });
+
+        }
+        _openDialogCreation() {
+          this.$.creationDialog.open();
+        }
+        _saveApartment() {
+          let name=this.$.apartmentTitle.value;
+          let descrip=this.$.apartmentDescription.value;
+          let price=this.$.apartmentPrice.value;
+          let contact=this.$.apartmentContact.value;
+          app.apartments.insert({'name':name,'eu_price':price,'description':descrip,'contact':contact}).then((response)=> {
+              this.push('list',response[0]);
+             console.log(response);
+          });
+        }
+        _deleteApartment(e) {
+          let apartmentID=e.model.item.apartmentID;
+          app.apartments.delete({'apartmentID':apartmentID}).then((response)=> {
+              //ToDo: Delete ID given in response of 'list' array and dont reload all
+              this.loadApartments();
+          });
+        }
+        _updateApartment(e) {
+            let apartmentID=this.currentApartment.apartmentID;
+            let name=this.$.updateTitle.value;
+            let descrip=this.$.updateDescription.value;
+            let price=this.$.updatePrice.value;
+            let contact=this.$.updateContact.value;
+            app.apartments.update({'apartmentID':apartmentID,'name':name,'description':descrip,'eu_price':price,'contact':contact}).then((response)=> {
+                //ToDo: Delete ID given in response of 'list' array and dont reload all
+                this.loadApartments();
+            });
+        }
+        getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        _showApartment(e) {
+          let apartmentID=e.model.item.apartmentID;
+          this.set('route.path', apartmentID);
+        }
+    }
+
+    window.customElements.define(MyApartments.is, MyApartments);
+  </script>
+</dom-module>

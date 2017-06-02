@@ -1,0 +1,6 @@
+{
+  "framework":"myphpapi",
+  "api":"myphpapi",
+  "version":"1.0",
+  "sendMail":false
+}
